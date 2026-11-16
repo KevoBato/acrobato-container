@@ -9,9 +9,10 @@ export SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS=0
 # Only the window in front reads the controller. Otherwise an ES left behind a running
 # game (for example after it restarted) navigates and launches games from the same button
 # presses. Environment variables override SDL hints an app sets at normal priority.
+# This needs each game's window to become active when it opens: see acrobato-openbox.xml.
 export SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=0
 
-openbox >/dev/null 2>&1 &
+openbox --config-file /defaults/acrobato-openbox.xml >/dev/null 2>&1 &
 while true; do
   /opt/acrobato/AppRun >>"$HOME/acrobato-es.log" 2>&1
   sleep 2

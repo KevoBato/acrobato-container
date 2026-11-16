@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Openbox settings for the AcroBato container (settings not listed keep their defaults).
+     Every new window gets focus when it appears: games only receive controller input while
+     their window is active (SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=0 in acrobato-loop.sh), and
+     Openbox's focus-stealing prevention otherwise left ES active under some emulators
+     (shadPS4 ignored the pad). -->
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <focus>
+    <focusNew>yes</focusNew>
+    <followMouse>no</followMouse>
+  </focus>
+  <applications>
+    <application class="*">
+      <focus>yes</focus>
+    </application>
+  </applications>
+</openbox_config>
