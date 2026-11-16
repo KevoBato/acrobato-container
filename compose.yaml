@@ -1,0 +1,28 @@
+# AcroBato in a browser: open https://<host>:3001 (self-signed certificate).
+# Set the folders in a .env file next to this one, or in the environment:
+#   ACROBATO_DATA  container home: settings, saves, logs   (default ./data)
+#   ACROBATO_ROMS  Batocera-layout roms folder              (default: inside ACROBATO_DATA)
+#   ACROBATO_BIOS  bios folder                              (default: inside ACROBATO_DATA)
+services:
+  acrobato:
+    image: acrobato:dev
+    build: .
+    container_name: acrobato
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Etc/UTC}
+      - SELKIES_MANUAL_WIDTH=1280
+      - SELKIES_MANUAL_HEIGHT=720
+    volumes:
+      - ${ACROBATO_DATA:-./data}:/config
+      # Read-only so AcroBato can't change an existing library; switch to :rw to let it
+      # save gamelists and scraped media there.
+      - ${ACROBATO_ROMS:-./data/.local/share/acrobato/roms}:/config/.local/share/acrobato/roms:ro
+      - ${ACROBATO_BIOS:-./data/.local/share/acrobato/bios}:/config/.local/share/acrobato/bios:ro
+    devices:
+      - /dev/dri:/dev/dri
+    ports:
+      - 3001:3001
+    shm_size: 1gb
+    restart: unless-stopped
