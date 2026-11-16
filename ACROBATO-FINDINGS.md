@@ -105,3 +105,15 @@ ready diff against AcroBato commit `97bfa99`: `acrobato-source-fixes.patch` (app
   (Select+Start) do nothing. Nothing is logged: evmapy's output isn't kept.
 - **Fix tested:** in the `_scan_devices` loop, `try: ... except OSError: log a warning and
   continue`. Same spirit as findings 1–2 for hotkeygen.
+
+## 9. Eglantine (and other Eden forks) ask "are you sure?" when the exit hotkey closes them
+
+- **What happens:** Select+Start closes the game, but Eglantine first shows a confirmation
+  box that has to be answered with the mouse or keys.
+- **Why:** `[UI] confirmStop` in `qt-config.ini`. In Eden-based emulators `0` means ask every
+  time, `1` ask depending on the game, `2` never ask. A new profile gets `0`, and
+  `confirmStop\default=true` makes the emulator ignore any value written next to it.
+- **Fix tested** (by hand, in the container's `system/configs/switch2/eglantine/eden/`):
+  `confirmStop\default=false` and `confirmStop=2`. The launcher already writes this file
+  (`apply_controls`), so it could set these two keys for Eglantine, Eden and Lichii. That
+  matches the owner's rule that users never have to do things inside the emulator.
