@@ -1,3 +1,5 @@
 data/
 .env
 *.AppImage
+# private dev log with machine names/addresses: kept local only
+HANDOFF.md
