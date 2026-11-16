@@ -1,4 +1,4 @@
-# AcroBato Docker
+# acrobato-container
 
 Runs the [AcroBato](https://github.com/KevoBato/AcroBato) AppImage in a container and streams
 it to a web browser, so any computer on the network can play: open
@@ -64,3 +64,11 @@ systemctl --user stop acrobato-ctr
 - `check-libs.sh`: lists libraries the extracted AppImage needs but the image lacks.
 - `launch-test.sh <system>`: run inside the container; launches the first game of a system
   through ES's API on port 1234 and reports whether RetroArch is running.
+- `eswatch.sh [seconds]`: run inside the container; waits for EmulationStation to restart and
+  prints process snapshots from just before, to see what stopped it.
+
+## License
+
+GPL-3.0-or-later, like AcroBato (see [LICENSE](LICENSE)). The image is built on
+LinuxServer.io's Selkies base image and runs AcroBato, each under its own license;
+`patch-selkies.py` modifies the bundled Selkies (GPL-3.0) inside the image.
