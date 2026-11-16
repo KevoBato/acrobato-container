@@ -1,18 +1,32 @@
 #!/usr/bin/with-contenv bash
-# Selkies only enables its gamepad interposer when `mknod /dev/input/js0` works, which a
-# rootless container (podman) is not allowed to do. The interposer catches open() on these
-# paths and hands back its own socket, so plain files work as stand-ins.
+# Gamepad device files for Selkies' interposer.
 [ -n "${NO_GAMEPAD+x}" ] && exit 0
-[ -e /dev/input/js0 ] && [ -e /run/s6/container_environment/LD_PRELOAD ] && exit 0
-mkdir -pm1777 /dev/input
-for n in js0 js1 js2 js3 event1000 event1001 event1002 event1003; do
-  [ -e "/dev/input/$n" ] || install -m 666 /dev/null "/dev/input/$n"
+N="${SELKIES_NUM_GAMEPADS:-4}"
+case "$N" in 1|2|3|4) ;; *) N=4 ;; esac
+
+# Selkies only enables its interposer when `mknod /dev/input/js0` works, which a rootless
+# container (podman) is not allowed to do. The interposer catches open() on these paths
+# and hands back its own socket, so plain files work as stand-ins for js0-3 (run-podman.sh
+# maps real device nodes onto event1000-1003, which need distinct device numbers).
+if ! { [ -e /dev/input/js0 ] && [ -e /run/s6/container_environment/LD_PRELOAD ]; }; then
+  mkdir -pm1777 /dev/input
+  for i in $(seq 0 $((N - 1))); do
+    for n in "js$i" "event$((1000 + i))"; do
+      [ -e "/dev/input/$n" ] || install -m 666 /dev/null "/dev/input/$n"
+    done
+  done
+  printf "/usr/lib/selkies_joystick_interposer.so:/opt/lib/libudev.so.1.0.0-fake" \
+    > /run/s6/container_environment/LD_PRELOAD
+  # undo the "no gamepads" settings Selkies wrote when mknod failed
+  rm -f /run/s6/container_environment/SELKIES_GAMEPAD_ENABLED \
+        /run/s6/container_environment/SELKIES_UI_SIDEBAR_SHOW_GAMEPADS \
+        /run/s6/container_environment/SELKIES_ENABLE_PLAYER2 \
+        /run/s6/container_environment/SELKIES_ENABLE_PLAYER3
+  echo "**** gamepads: mknod not allowed, using placeholder /dev/input files ****"
+fi
+
+# Selkies always creates nodes for 4 pads; with fewer (SELKIES_NUM_GAMEPADS), the extra
+# ones have no server behind them and fail to open, which crashed evmapy (no hotkeys).
+for i in $(seq "$N" 3); do
+  rm -f "/dev/input/js$i" "/dev/input/event$((1000 + i))" 2>/dev/null || true
 done
-printf "/usr/lib/selkies_joystick_interposer.so:/opt/lib/libudev.so.1.0.0-fake" \
-  > /run/s6/container_environment/LD_PRELOAD
-# undo the "no gamepads" settings Selkies wrote when mknod failed (NO_GAMEPAD turns them off)
-rm -f /run/s6/container_environment/SELKIES_GAMEPAD_ENABLED \
-      /run/s6/container_environment/SELKIES_UI_SIDEBAR_SHOW_GAMEPADS \
-      /run/s6/container_environment/SELKIES_ENABLE_PLAYER2 \
-      /run/s6/container_environment/SELKIES_ENABLE_PLAYER3
-echo "**** gamepads: mknod not allowed, using placeholder /dev/input files ****"

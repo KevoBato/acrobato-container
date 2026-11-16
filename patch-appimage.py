@@ -23,6 +23,18 @@ PATCHES = {
          "            print(f'skipping {device.device_node}: {e}')\n"
          '            return\n'),
     ],
+    f'{SITE}/evmapy/multiplexer.py': [
+        # One input device that can't be opened (a pad node with nothing behind it) made
+        # evmapy exit at startup, so in-game hotkeys (Select+Start) stopped working.
+        ('            if dev_path not in processed_devices:\n'
+         '                target_keys_dev = self._add_device(dev_path)\n',
+         '            if dev_path not in processed_devices:\n'
+         '                try:\n'
+         '                    target_keys_dev = self._add_device(dev_path)\n'
+         '                except OSError as e:\n'
+         '                    self._logger.warning("skipping %s: %s", dev_path, e)\n'
+         '                    continue\n'),
+    ],
     'usr/share/acrobato/acrobato_store.py': [
         # "Open <emulator>" entries are optional; the roms folder may be mounted read-only.
         ('    for f in window_entries(e):\n'

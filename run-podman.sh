@@ -13,14 +13,22 @@ BIOS="${ACROBATO_BIOS:-$DATA/.local/share/acrobato/bios}"
 # Browser gamepads: Selkies' interposer catches open() on /dev/input/event1000-1003, but
 # RetroArch (and SDL's fallback) tell pads apart by the node's device number, and a
 # rootless container can't mknod. Map four harmless host character devices there, so each
-# path has its own number; the interposer means they are never really read.
-PAD_NODES="--device /dev/zero:/dev/input/event1000 --device /dev/full:/dev/input/event1001
-  --device /dev/random:/dev/input/event1002 --device /dev/urandom:/dev/input/event1003"
+# path has its own number; the interposer means they are never really read. Only as many
+# as there are virtual pads (SELKIES_NUM_GAMEPADS, default 1 as in the Dockerfile): a node
+# with no pad behind it fails to open, and evmapy (hotkeys) gave up on that.
+N="${SELKIES_NUM_GAMEPADS:-1}"
+PAD_NODES="" i=0
+for dev in /dev/zero /dev/full /dev/random /dev/urandom; do
+  [ "$i" -lt "$N" ] || break
+  PAD_NODES="$PAD_NODES --device $dev:/dev/input/event$((1000 + i))"
+  i=$((i + 1))
+done
 podman rm -f acrobato >/dev/null 2>&1 || true
 exec podman run --rm --name acrobato \
   --userns=keep-id:uid=1000,gid=1000 --user 0:0 \
   -e PUID=1000 -e PGID=1000 -e TZ="${TZ:-Etc/UTC}" \
   -e SELKIES_MANUAL_WIDTH=1280 -e SELKIES_MANUAL_HEIGHT=720 \
+  -e SELKIES_NUM_GAMEPADS="$N" \
   -v "$DATA:/config" \
   -v "$ROMS:/config/.local/share/acrobato/roms:ro" \
   -v "$BIOS:/config/.local/share/acrobato/bios:ro" \

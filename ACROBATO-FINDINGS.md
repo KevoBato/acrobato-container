@@ -95,3 +95,13 @@ ready diff against AcroBato commit `97bfa99`: `acrobato-source-fixes.patch` (app
   even an `O_CLOEXEC` open leaks; on a real host a leaked evdev fd is harmless (the kernel
   doesn't block the writer). Worth checking that the launcher spawns emulators with
   `close_fds=True` / closes pad fds first.
+
+## 8. evmapy exits at startup if any input device can't be opened
+
+- **Where:** evmapy `multiplexer.py`, `_scan_devices` → `_add_device` → `evdev.InputDevice`.
+- **What happens:** one `/dev/input/event*` that lists but fails to open (here a container
+  pad node with nothing behind it: `OSError: [Errno 5] Input/output error`) raises out of
+  the scan, evmapy exits right after the launcher starts it, and in-game hotkeys
+  (Select+Start) do nothing. Nothing is logged: evmapy's output isn't kept.
+- **Fix tested:** in the `_scan_devices` loop, `try: ... except OSError: log a warning and
+  continue`. Same spirit as findings 1–2 for hotkeygen.

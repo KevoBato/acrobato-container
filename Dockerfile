@@ -32,3 +32,6 @@ COPY root/ /
 RUN chmod +x /defaults/startwm.sh /defaults/acrobato-loop.sh /custom-cont-init.d/*
 
 ENV TITLE=AcroBato
+# Virtual controllers offered to the browser (1-4). Each one is a connected controller to
+# every game, so 1 unless more players will join (see patch-selkies.py).
+ENV SELKIES_NUM_GAMEPADS=1
