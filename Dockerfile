@@ -8,6 +8,11 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends libxcb-cursor0 \
  && rm -rf /var/lib/apt/lists/*
 
+# Selkies' gamepad server froze every virtual pad when one client stopped reading.
+COPY patch-selkies.py /tmp/
+RUN python3 -I /tmp/patch-selkies.py /lsiopy/lib/python3.12/site-packages/selkies/input_handler.py \
+ && rm /tmp/patch-selkies.py
+
 ARG APPIMAGE=AcroBato-x86_64.AppImage
 COPY ${APPIMAGE} /tmp/acrobato.AppImage
 RUN cd /opt \

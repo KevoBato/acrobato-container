@@ -79,3 +79,19 @@ ready diff against AcroBato commit `97bfa99`: `acrobato-source-fixes.patch` (app
   GUID-based matching ever becomes stricter.
 - `nice: cannot set niceness: Permission denied` appears when emulators start in a
   container; harmless.
+
+## 7. Emulators inherit an open controller connection from the launcher (suspected)
+
+- **Seen on:** the Deck container running Eglantine (Pokopia). A connection to the first
+  virtual pad was held by `eglantine`, the `eglantine.AppImage` runtime and the
+  `acrobato-watchdog` shell's `sleep`: an fd they all **inherited**, that none of them
+  reads. Its unread buffer filled (~213 KB) after about a minute of play.
+- **Effect here:** Selkies' pad server blocked on that connection, so input stopped for
+  everything (game and hotkeys). This project now makes Selkies skip such clients
+  (`patch-selkies.py`), so it no longer freezes; the leak itself remains.
+- **Likely cause (not proven):** batocera-launch (or its SDL3 controller monitor) has the
+  pad open when it starts `acrobato-watchdog <emulator>`, and the fd isn't closed in the
+  child. With Selkies' interposer the "device" is a socket made without `SOCK_CLOEXEC`, so
+  even an `O_CLOEXEC` open leaks; on a real host a leaked evdev fd is harmless (the kernel
+  doesn't block the writer). Worth checking that the launcher spawns emulators with
+  `close_fds=True` / closes pad fds first.
