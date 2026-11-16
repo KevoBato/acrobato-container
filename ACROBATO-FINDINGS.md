@@ -6,7 +6,9 @@ extracted AppImage (`patch-appimage.py`) or the container setup. A future AcroBa
 want to fix them at the source. Found 2026-11-15, against the AcroBato build whose AppImage
 sha256 starts `707ebd7c5872ae8e`.
 
-Each item: what happens, why, and the fix that was tested here.
+Each item: what happens, why, and the fix that was tested here. Items 1–4 also exist as a
+ready diff against AcroBato commit `97bfa99`: `acrobato-source-fixes.patch` (apply with
+`git apply` in the AcroBato repo, if wanted).
 
 ## 1. hotkeygen crashes when `/dev/uinput` doesn't exist (every game launch fails)
 

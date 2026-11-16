@@ -1,0 +1,62 @@
+diff --git a/packaging/store/acrobato_store.py b/packaging/store/acrobato_store.py
+index a7ba452..bfa98e4 100644
+--- a/packaging/store/acrobato_store.py
++++ b/packaging/store/acrobato_store.py
+@@ -219,7 +219,8 @@ def install_github(e: dict) -> str:
+         'unset APPDIR APPIMAGE ARGV0 OWD\n'
+         '# updates come from the Content Downloader; some AppImages otherwise ask on first start\n'
+         'export DISABLE_AUTO_UPDATES=1\n'
+-        'if ! command -v fusermount3 >/dev/null 2>&1 && ! command -v fusermount >/dev/null 2>&1; then\n'
++        '# (containers often have the fusermount tools but no /dev/fuse)\n'
++        'if [ ! -w /dev/fuse ] || { ! command -v fusermount3 >/dev/null 2>&1 && ! command -v fusermount >/dev/null 2>&1; }; then\n'
+         '  export APPIMAGE_EXTRACT_AND_RUN=1\n'
+         'fi\n'
+         'exec "$APP" "$@"\n'))
+@@ -269,8 +270,13 @@ def cmd_install(name: str) -> None:
+     state[e['id']] = {'version': version, 'installed': time.strftime('%Y-%m-%d')}
+     save(STATE, state)
+     for f in window_entries(e):
+-        f.parent.mkdir(parents=True, exist_ok=True)
+-        f.write_text(e['id'] + '\n')
++        if f.exists():
++            continue
++        try:  # optional: the roms folder may be read-only (e.g. a shared library in Docker)
++            f.parent.mkdir(parents=True, exist_ok=True)
++            f.write_text(e['id'] + '\n')
++        except OSError as ex:
++            print(f'could not add {f}: {ex}', file=sys.stderr)
+     say(f"{e['name']} installed")
+ 
+ 
+diff --git a/scripts/relocate-launcher.py b/scripts/relocate-launcher.py
+index d83f4e2..fdfca8f 100755
+--- a/scripts/relocate-launcher.py
++++ b/scripts/relocate-launcher.py
+@@ -254,7 +254,7 @@ def main() -> int:
+         '            self.target = evdev.UInput(\n'
+         '                name=DEVICE_NAME, events={ecodes.EV_KEY: keys_list, ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y]}\n'
+         '            )\n'
+-        '        except OSError as e:\n'
++        '        except (OSError, evdev.UInputError) as e:  # UInputError: no /dev/uinput at all (containers)\n'
+         "            print(f'no virtual keyboard (/dev/uinput: {e}); key-based hotkeys disabled')\n"
+         '            self.target = None\n',
+     )
+@@ -273,6 +273,18 @@ def main() -> int:
+         '        if self.target is not None:\n'
+         '            await reset_pointer_position(self.target)\n',
+     )
++    # A device udev/sysfs lists but whose /dev node is missing or unreadable (containers
++    # see the host's /sys but not its /dev/input): skip it instead of crashing the daemon.
++    tweak(
++        roots,
++        'hotkeygen/daemon.py',
++        '        input_device_mapping = _get_input_device_mapping(device, self.debug)\n',
++        '        try:\n'
++        '            input_device_mapping = _get_input_device_mapping(device, self.debug)\n'
++        '        except OSError as e:\n'
++        "            print(f'skipping {device.device_node}: {e}')\n"
++        '            return\n',
++    )
+     tweak(
+         roots,
+         'hotkeygen/daemon.py',
